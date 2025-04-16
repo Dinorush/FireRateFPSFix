@@ -6,14 +6,15 @@ namespace FireRateFPSFix.FireState
 {
     public sealed class FireStateUpdater
     {
-        private float _timeBuffer = 0f;
-        private float _lastFireTime = 0f;
         private readonly BulletWeapon _weapon;
         private BulletWeaponArchetype _archetype;
         private float _shotDelay;
         private float _burstDelay;
         private float _cooldownDelay;
         private IntPtr _archetypePtr;
+
+        private float _timeBuffer = 0f;
+        private float _lastFireTime = 0f;
 
         public FireStateUpdater(BulletWeapon weapon)
         {
@@ -36,7 +37,7 @@ namespace FireRateFPSFix.FireState
             _cooldownDelay = _archetype.CooldownDelay();
             _archetypePtr = _archetype.Pointer;
             _timeBuffer = 0f;
-            _lastFireTime = Clock.Time;
+            _lastFireTime = 0f;
         }
 
         public bool IsValid => _weapon != null;
@@ -58,25 +59,29 @@ namespace FireRateFPSFix.FireState
             _lastFireTime = 0;
         }
 
-        public void UpdateEndFiring()
-        {
-            UpdateArchetype();
-
-            float delay = _archetype.HasCooldown ? GetCooldownDelay() : GetBurstDelay();
-            _archetype.m_nextBurstTimer = Clock.Time - _timeBuffer + delay;
-            _archetype.m_nextShotTimer = Clock.Time - _timeBuffer + GetShotDelay();
-            _timeBuffer -= Math.Min(_timeBuffer, delay); // Avoid double counting buffer when UpdateStartFiring runs
-        }
-
-        public void UpdateNextFireTime()
+        public void UpdateFired()
         {
             UpdateArchetype();
 
             float time = Clock.Time;
             if (_lastFireTime != 0)
                 _timeBuffer += time - _lastFireTime - GetShotDelay();
-            _archetype.m_nextShotTimer -= _timeBuffer;
             _lastFireTime = time;
+        }
+
+        public void UpdateFireTime()
+        {
+            UpdateArchetype();
+
+            if (_archetype.m_firing)
+                _archetype.m_nextShotTimer -= _timeBuffer;
+            else
+            {
+                float delay = _archetype.HasCooldown ? GetCooldownDelay() : GetBurstDelay();
+                _archetype.m_nextBurstTimer = Clock.Time - _timeBuffer + delay;
+                _archetype.m_nextShotTimer = Clock.Time - _timeBuffer + GetShotDelay();
+                _timeBuffer -= Math.Min(_timeBuffer, delay); // Avoid double counting buffer when UpdateStartFiring runs
+            }
         }
     }
 }

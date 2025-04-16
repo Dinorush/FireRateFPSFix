@@ -13,7 +13,7 @@ namespace FireRateFPSFix.Patches
         [HarmonyPatch(typeof(BulletWeaponArchetype), nameof(BulletWeaponArchetype.OnStartFiring))]
         [HarmonyWrapSafe]
         [HarmonyPostfix]
-        [HarmonyAfter(EWCWrapper.PLUGIN_GUID)]
+        [HarmonyBefore(EWCWrapper.PLUGIN_GUID)]
         private static void StartFiringCallback(BulletWeaponArchetype __instance)
         {
             FireStateManager.GetUpdater(__instance.m_weapon).UpdateStartFiring();
@@ -22,14 +22,22 @@ namespace FireRateFPSFix.Patches
         [HarmonyPatch(typeof(BulletWeaponArchetype), nameof(BulletWeaponArchetype.PostFireCheck))]
         [HarmonyWrapSafe]
         [HarmonyPostfix]
-        [HarmonyAfter(EWCWrapper.PLUGIN_GUID)]
+        [HarmonyBefore(EWCWrapper.PLUGIN_GUID)]
         private static void PostFireCallback(BulletWeaponArchetype __instance)
         {
             var updater = FireStateManager.GetUpdater(__instance.m_weapon);
             if (__instance.m_firing)
-                updater.UpdateNextFireTime();
-            else
-                updater.UpdateEndFiring();
+                updater.UpdateFired();
+        }
+
+        [HarmonyPatch(typeof(BulletWeaponArchetype), nameof(BulletWeaponArchetype.PostFireCheck))]
+        [HarmonyWrapSafe]
+        [HarmonyPostfix]
+        [HarmonyAfter(EWCWrapper.PLUGIN_GUID)]
+        private static void PostFireCallback_AfterEWC(BulletWeaponArchetype __instance)
+        {
+            var updater = FireStateManager.GetUpdater(__instance.m_weapon);
+            updater.UpdateFireTime();
         }
     }
 }
