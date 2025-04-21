@@ -42,7 +42,7 @@ namespace FireRateFPSFix.FireState
 
         public bool IsValid => _weapon != null;
 
-        private float GetCooldownDelay() => _cooldownDelay;
+        private float GetCooldownDelay() => EWCWrapper.GetCooldownDelay(_weapon, _cooldownDelay);
         private float GetBurstDelay() => EWCWrapper.GetBurstDelay(_weapon, _burstDelay);
         private float GetShotDelay() => EWCWrapper.GetShotDelay(_weapon, _shotDelay);
 

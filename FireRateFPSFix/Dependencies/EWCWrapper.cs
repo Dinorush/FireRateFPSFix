@@ -42,5 +42,18 @@ namespace FireRateFPSFix.Dependencies
             var cwc = weapon.GetComponent<CustomWeaponComponent>();
             return cwc != null ? 1f / cwc.CurrentFireRate : shotDelay;
         }
+
+        public static float GetCooldownDelay(BulletWeapon weapon, float cooldownDelay)
+        {
+            if (!hasEWC) return cooldownDelay;
+            return GetCooldownDelay_Internal(weapon, cooldownDelay);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static float GetCooldownDelay_Internal(BulletWeapon weapon, float cooldownDelay)
+        {
+            var cwc = weapon.GetComponent<CustomWeaponComponent>();
+            return cwc != null ? 1f / cwc.CurrentCooldownDelay : cooldownDelay;
+        }
     }
 }
