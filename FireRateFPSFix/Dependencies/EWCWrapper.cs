@@ -23,7 +23,7 @@ namespace FireRateFPSFix.Dependencies
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void AddFireRateChangeCallback()
         {
-            FireRateAPI.FireRateModified += (weapon, shotDelay, burstDelay, cooldownDelay) =>
+            FireRateAPI.CooldownSet += (weapon, shotDelay, burstDelay, cooldownDelay) =>
             {
                 FireStateManager.GetUpdater(weapon).EWCOnCooldownSet(shotDelay, burstDelay, cooldownDelay);
             };

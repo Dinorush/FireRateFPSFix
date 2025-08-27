@@ -7,7 +7,7 @@ using HarmonyLib;
 
 namespace FireRateFPSFix
 {
-    [BepInPlugin("Dinorush." + MODNAME, MODNAME, "1.0.4")]
+    [BepInPlugin("Dinorush." + MODNAME, MODNAME, "1.0.5")]
     [BepInDependency("dev.gtfomodding.gtfo-api", BepInDependency.DependencyFlags.HardDependency)]
     [BepInDependency(EWCWrapper.PLUGIN_GUID, BepInDependency.DependencyFlags.SoftDependency)]
     internal sealed class EntryPoint : BasePlugin
