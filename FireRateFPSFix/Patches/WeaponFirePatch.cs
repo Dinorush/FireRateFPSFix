@@ -21,9 +21,8 @@ namespace FireRateFPSFix.Patches
 
         [HarmonyPatch(typeof(BulletWeaponArchetype), nameof(BulletWeaponArchetype.PostFireCheck))]
         [HarmonyWrapSafe]
-        [HarmonyPostfix]
-        [HarmonyBefore(EWCWrapper.PLUGIN_GUID)]
-        private static void PostFireCallback(BulletWeaponArchetype __instance)
+        [HarmonyPrefix]
+        private static void PrePostFireCallback(BulletWeaponArchetype __instance)
         {
             var updater = FireStateManager.GetUpdater(__instance.m_weapon);
             if (__instance.m_firing)

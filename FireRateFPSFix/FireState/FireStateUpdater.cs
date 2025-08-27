@@ -7,53 +7,47 @@ namespace FireRateFPSFix.FireState
     public sealed class FireStateUpdater
     {
         private readonly BulletWeapon _weapon;
-        private BulletWeaponArchetype _archetype;
         private float _shotDelay;
         private float _burstDelay;
         private float _cooldownDelay;
-        private IntPtr _archetypePtr;
+        private bool _hasCooldown;
 
         private float _timeBuffer = 0f;
         private float _lastFireTime = 0f;
+        private float _nextBurstTime = 0f;
 
         public FireStateUpdater(BulletWeapon weapon)
         {
             _weapon = weapon;
-            _archetype = _weapon.m_archeType;
-            _shotDelay = _archetype.ShotDelay();
-            _burstDelay = _archetype.BurstDelay();
-            _cooldownDelay = _archetype.CooldownDelay();
-            _archetypePtr = _archetype.Pointer;
+            var archetype = _weapon.m_archeType;
+            if (!EWCWrapper.GetDelays(_weapon, out _shotDelay, out _burstDelay, out _cooldownDelay))
+            {
+                _shotDelay = archetype.ShotDelay();
+                _burstDelay = archetype.BurstDelay();
+                _cooldownDelay = archetype.CooldownDelay();
+            }
+            _hasCooldown = archetype.HasCooldown;
         }
 
-        private void UpdateArchetype()
-        {
-            var newArch = _weapon.m_archeType;
-            if (_archetypePtr == newArch.Pointer) return;
+        private float GetCooldown() => _hasCooldown ? _cooldownDelay : _burstDelay;
 
-            _archetype = newArch;
-            _shotDelay = _archetype.ShotDelay();
-            _burstDelay = _archetype.BurstDelay();
-            _cooldownDelay = _archetype.CooldownDelay();
-            _archetypePtr = _archetype.Pointer;
-            _timeBuffer = 0f;
-            _lastFireTime = 0f;
+        public void EWCOnCooldownSet(float shotDelay, float burstDelay, float cooldownDelay)
+        {
+            _shotDelay = shotDelay;
+            _burstDelay = burstDelay;
+            _cooldownDelay = cooldownDelay;
+            _hasCooldown = _weapon.m_archeType.HasCooldown;
+            _nextBurstTime = Math.Max(_lastFireTime + GetCooldown(), Clock.Time);
         }
 
         public bool IsValid => _weapon != null;
 
-        private float GetCooldownDelay() => EWCWrapper.GetCooldownDelay(_weapon, _cooldownDelay);
-        private float GetBurstDelay() => EWCWrapper.GetBurstDelay(_weapon, _burstDelay);
-        private float GetShotDelay() => EWCWrapper.GetShotDelay(_weapon, _shotDelay);
-
         public void UpdateStartFiring()
         {
-            UpdateArchetype();
-
-            float nextTime = _archetype.m_nextBurstTimer;
+            float expectedTime = _lastFireTime + GetCooldown();
             float time = Clock.Time;
-            if (nextTime + Clock.Delta >= time)
-                _timeBuffer += time - nextTime;
+            if (_nextBurstTime + Clock.Delta >= time)
+                _timeBuffer += time - expectedTime;
             else
                 _timeBuffer = 0f;
             _lastFireTime = 0;
@@ -61,26 +55,23 @@ namespace FireRateFPSFix.FireState
 
         public void UpdateFired()
         {
-            UpdateArchetype();
-
             float time = Clock.Time;
             if (_lastFireTime != 0)
-                _timeBuffer += time - _lastFireTime - GetShotDelay();
+                _timeBuffer += time - _lastFireTime - _shotDelay;
             _lastFireTime = time;
         }
 
         public void UpdateFireTime()
         {
-            UpdateArchetype();
-
-            if (_archetype.m_firing)
-                _archetype.m_nextShotTimer -= _timeBuffer;
+            var archetype = _weapon.m_archeType;
+            if (archetype.m_firing)
+                archetype.m_nextShotTimer -= _timeBuffer;
             else
             {
-                float delay = _archetype.HasCooldown ? GetCooldownDelay() : GetBurstDelay();
-                _archetype.m_nextBurstTimer = Clock.Time - _timeBuffer + delay;
-                _archetype.m_nextShotTimer = Clock.Time - _timeBuffer + GetShotDelay();
-                _timeBuffer -= Math.Min(_timeBuffer, delay); // Avoid double counting buffer when UpdateStartFiring runs
+                var time = Clock.Time;
+                archetype.m_nextBurstTimer = Math.Max(time, time + GetCooldown() - _timeBuffer);
+                archetype.m_nextShotTimer = Math.Max(time, time + _shotDelay - _timeBuffer);
+                _nextBurstTime = Math.Max(archetype.m_nextBurstTimer, archetype.m_nextShotTimer);
             }
         }
     }

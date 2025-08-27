@@ -1,6 +1,7 @@
 ﻿using BepInEx.Unity.IL2CPP;
+using EWC.API;
 using EWC.CustomWeapon;
-using GameData;
+using FireRateFPSFix.FireState;
 using Gear;
 using System.Runtime.CompilerServices;
 
@@ -15,45 +16,46 @@ namespace FireRateFPSFix.Dependencies
         static EWCWrapper()
         {
             hasEWC = IL2CPPChainloader.Instance.Plugins.ContainsKey(PLUGIN_GUID);
-        }
-
-        public static float GetBurstDelay(BulletWeapon weapon, float burstDelay)
-        {
-            if (!hasEWC) return burstDelay;
-            return GetBurstDelay_Internal(weapon, burstDelay);
+            if (hasEWC)
+                AddFireRateChangeCallback();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static float GetBurstDelay_Internal(BulletWeapon weapon, float burstDelay)
+        private static void AddFireRateChangeCallback()
         {
-            var cwc = weapon.GetComponent<CustomWeaponComponent>();
-            return cwc != null ? cwc.CurrentBurstDelay : burstDelay;
+            FireRateAPI.FireRateModified += (weapon, shotDelay, burstDelay, cooldownDelay) =>
+            {
+                FireStateManager.GetUpdater(weapon).EWCOnCooldownSet(shotDelay, burstDelay, cooldownDelay);
+            };
         }
 
-        public static float GetShotDelay(BulletWeapon weapon, float shotDelay)
+        public static bool GetDelays(BulletWeapon weapon, out float shotDelay, out float burstDelay, out float cooldownDelay)
         {
-            if (!hasEWC) return shotDelay;
-            return GetShotDelay_Internal(weapon, shotDelay);
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static float GetShotDelay_Internal(BulletWeapon weapon, float shotDelay)
-        {
-            var cwc = weapon.GetComponent<CustomWeaponComponent>();
-            return cwc != null ? 1f / cwc.CurrentFireRate : shotDelay;
-        }
-
-        public static float GetCooldownDelay(BulletWeapon weapon, float cooldownDelay)
-        {
-            if (!hasEWC) return cooldownDelay;
-            return GetCooldownDelay_Internal(weapon, cooldownDelay);
+            if (!hasEWC)
+            {
+                shotDelay = 0;
+                burstDelay = 0;
+                cooldownDelay = 0;
+                return false;
+            }
+            return GetDelays_Internal(weapon, out shotDelay, out burstDelay, out cooldownDelay);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static float GetCooldownDelay_Internal(BulletWeapon weapon, float cooldownDelay)
+        private static bool GetDelays_Internal(BulletWeapon weapon, out float shotDelay, out float burstDelay, out float cooldownDelay)
         {
             var cwc = weapon.GetComponent<CustomWeaponComponent>();
-            return cwc != null ? 1f / cwc.CurrentCooldownDelay : cooldownDelay;
+            if (cwc == null)
+            {
+                shotDelay = 0;
+                burstDelay = 0;
+                cooldownDelay = 0;
+                return false;
+            }
+            shotDelay = 1f / cwc.CurrentFireRate;
+            burstDelay = cwc.CurrentBurstDelay;
+            cooldownDelay = cwc.CurrentCooldownDelay;
+            return true;
         }
     }
 }

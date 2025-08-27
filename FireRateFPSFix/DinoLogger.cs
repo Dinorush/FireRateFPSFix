@@ -1,6 +1,6 @@
 ﻿using BepInEx.Logging;
 
-namespace FireRateFPSFix.Utils
+namespace FireRateFPSFix
 {
     internal static class DinoLogger
     {
