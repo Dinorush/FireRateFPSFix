@@ -70,6 +70,7 @@ namespace FireRateFPSFix.FireState
                 archetype.m_nextBurstTimer = Math.Max(time, time + GetCooldown() - _timeBuffer);
                 archetype.m_nextShotTimer = Math.Max(time, time + _shotDelay - _timeBuffer);
                 _nextBurstTime = Math.Max(archetype.m_nextBurstTimer, archetype.m_nextShotTimer);
+                _inCooldown = true;
             }
         }
 
