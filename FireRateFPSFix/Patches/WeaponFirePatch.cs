@@ -8,17 +8,6 @@ namespace FireRateFPSFix.Patches
     [HarmonyPatch]
     internal static class WeaponFirePatch
     {
-        [HarmonyPatch(typeof(BWA_Burst), nameof(BWA_Burst.OnStartFiring))]
-        [HarmonyPatch(typeof(BWA_Auto), nameof(BWA_Auto.OnStartFiring))]
-        [HarmonyPatch(typeof(BulletWeaponArchetype), nameof(BulletWeaponArchetype.OnStartFiring))]
-        [HarmonyWrapSafe]
-        [HarmonyPostfix]
-        [HarmonyBefore(EWCWrapper.PLUGIN_GUID)]
-        private static void StartFiringCallback(BulletWeaponArchetype __instance)
-        {
-            FireStateManager.GetUpdater(__instance.m_weapon).UpdateStartFiring();
-        }
-
         [HarmonyPatch(typeof(BulletWeaponArchetype), nameof(BulletWeaponArchetype.PostFireCheck))]
         [HarmonyWrapSafe]
         [HarmonyPrefix]
@@ -36,7 +25,16 @@ namespace FireRateFPSFix.Patches
         private static void PostFireCallback_AfterEWC(BulletWeaponArchetype __instance)
         {
             var updater = FireStateManager.GetUpdater(__instance.m_weapon);
-            updater.UpdateFireTime();
+            updater.OnPostFireCheck();
+        }
+
+        [HarmonyPatch(typeof(BWA_Auto), nameof(BWA_Auto.OnStopFiring))]
+        [HarmonyWrapSafe]
+        [HarmonyPostfix]
+        private static void PostStopFiringCallback(BulletWeaponArchetype __instance)
+        {
+            var updater = FireStateManager.GetUpdater(__instance.m_weapon);
+            updater.OnStopFiring();
         }
     }
 }

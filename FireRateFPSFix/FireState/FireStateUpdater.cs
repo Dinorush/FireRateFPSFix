@@ -15,6 +15,7 @@ namespace FireRateFPSFix.FireState
         private float _timeBuffer = 0f;
         private float _lastFireTime = 0f;
         private float _nextBurstTime = 0f;
+        private bool _inCooldown = true;
 
         public FireStateUpdater(BulletWeapon weapon)
         {
@@ -37,31 +38,28 @@ namespace FireRateFPSFix.FireState
             _burstDelay = burstDelay;
             _cooldownDelay = cooldownDelay;
             _hasCooldown = _weapon.m_archeType.HasCooldown;
-            _nextBurstTime = Math.Max(_lastFireTime + GetCooldown(), Clock.Time);
+            _nextBurstTime = _inCooldown ? Math.Max(_lastFireTime + GetCooldown() - _timeBuffer, Clock.Time) : 0;
         }
 
         public bool IsValid => _weapon != null;
 
-        public void UpdateStartFiring()
-        {
-            float expectedTime = _lastFireTime + GetCooldown();
-            float time = Clock.Time;
-            if (_nextBurstTime + Clock.Delta >= time)
-                _timeBuffer += time - expectedTime;
-            else
-                _timeBuffer = 0f;
-            _lastFireTime = 0;
-        }
-
         public void UpdateFired()
         {
             float time = Clock.Time;
-            if (_lastFireTime != 0)
+            if (_inCooldown)
+            {
+                if (_nextBurstTime + Clock.Delta >= time)
+                    _timeBuffer += time - (_lastFireTime + GetCooldown());
+                else
+                    _timeBuffer = 0;
+                _inCooldown = false;
+            }
+            else
                 _timeBuffer += time - _lastFireTime - _shotDelay;
             _lastFireTime = time;
         }
 
-        public void UpdateFireTime()
+        public void OnPostFireCheck()
         {
             var archetype = _weapon.m_archeType;
             if (archetype.m_firing)
@@ -73,6 +71,14 @@ namespace FireRateFPSFix.FireState
                 archetype.m_nextShotTimer = Math.Max(time, time + _shotDelay - _timeBuffer);
                 _nextBurstTime = Math.Max(archetype.m_nextBurstTimer, archetype.m_nextShotTimer);
             }
+        }
+
+        public void OnStopFiring()
+        {
+            // Usually overridden by UpdateFireTime, but Auto weapons can call
+            // OnStopFiring without entering PostFireCheck
+            _inCooldown = true;
+            _nextBurstTime = _lastFireTime + _shotDelay - _timeBuffer;
         }
     }
 }
