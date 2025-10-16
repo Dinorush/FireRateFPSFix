@@ -3,6 +3,7 @@ using EWC.API;
 using EWC.CustomWeapon;
 using FireRateFPSFix.FireState;
 using Gear;
+using System;
 using System.Runtime.CompilerServices;
 
 namespace FireRateFPSFix.Dependencies
@@ -44,17 +45,17 @@ namespace FireRateFPSFix.Dependencies
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static bool GetDelays_Internal(BulletWeapon weapon, out float shotDelay, out float burstDelay, out float cooldownDelay)
         {
-            var cwc = weapon.GetComponent<CustomWeaponComponent>();
-            if (cwc == null)
+            var cgc = weapon.GetComponent<CustomGunComponent>();
+            if (cgc == null)
             {
                 shotDelay = 0;
                 burstDelay = 0;
                 cooldownDelay = 0;
                 return false;
             }
-            shotDelay = 1f / cwc.CurrentFireRate;
-            burstDelay = cwc.CurrentBurstDelay;
-            cooldownDelay = cwc.CurrentCooldownDelay;
+            shotDelay = 1f / cgc.CurrentFireRate;
+            burstDelay = Math.Max(cgc.CurrentBurstDelay, shotDelay);
+            cooldownDelay = cgc.CurrentCooldownDelay;
             return true;
         }
     }
