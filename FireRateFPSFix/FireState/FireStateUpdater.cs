@@ -14,6 +14,10 @@ namespace FireRateFPSFix.FireState
 
         private float _timeBuffer = 0f;
         private float _lastFireTime = 0f;
+
+        private float _fireShotTime = 0f;
+        private float _fireShotTimeBase = 0f;
+
         private float _nextShotTimeBase = 0f;
         private float _nextShotTime = 0f;
         private bool _inCooldown = true;
@@ -52,16 +56,32 @@ namespace FireRateFPSFix.FireState
             _cooldownDelay = cooldownDelay;
             _hasCooldown = _weapon.m_archeType.HasCooldown;
 
-            SetNextShotTime(Math.Max(Clock.Time, _lastFireTime + (_inCooldown ? _shotDelay : GetCooldown(true))));
+            SetNextShotTime(Math.Max(Clock.Time, _lastFireTime + (_inCooldown ? GetCooldown(true) : _shotDelay)));
+        }
+
+        public void EWCOnCooldownInterrupt()
+        {
+            var time = Clock.Time;
+            _nextShotTime = time;
+            _nextShotTimeBase = time;
         }
 
         public bool IsValid => _weapon != null;
 
-        public void UpdateFired()
+        public void UpdatePreFired()
+        {
+            _fireShotTime = _nextShotTime;
+            _fireShotTimeBase = _nextShotTimeBase;
+        }
+
+        public void UpdatePostFired()
         {
             float time = Clock.Time;
-            if (_nextShotTime + Clock.Delta >= time)
-                _timeBuffer += time - _nextShotTimeBase;
+            // EWC firing multiple times in the same frame w/ EnforceFireRate
+            if (_lastFireTime == time) return;
+
+            if (_fireShotTime + Clock.Delta >= time)
+                _timeBuffer += time - _fireShotTimeBase;
             else
                 _timeBuffer = 0;
             _inCooldown = false;

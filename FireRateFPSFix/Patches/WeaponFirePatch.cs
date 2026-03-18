@@ -8,14 +8,27 @@ namespace FireRateFPSFix.Patches
     [HarmonyPatch]
     internal static class WeaponFirePatch
     {
-        [HarmonyPatch(typeof(BulletWeaponArchetype), nameof(BulletWeaponArchetype.PostFireCheck))]
+        [HarmonyPatch(typeof(BWA_Auto), nameof(BWA_Auto.OnFireShot))]
+        [HarmonyPatch(typeof(BWA_Burst), nameof(BWA_Burst.OnFireShot))]
+        [HarmonyPatch(typeof(BWA_Semi), nameof(BWA_Semi.OnFireShot))]
         [HarmonyWrapSafe]
+        [HarmonyPriority(Priority.High)]
         [HarmonyPrefix]
-        private static void PrePostFireCallback(BulletWeaponArchetype __instance)
+        private static void PreFireCallback(BulletWeaponArchetype __instance, ref FireStateUpdater __state)
         {
-            var updater = FireStateManager.GetUpdater(__instance.m_weapon);
-            if (__instance.m_firing)
-                updater.UpdateFired();
+            __state = FireStateManager.GetUpdater(__instance.m_weapon);
+            __state.UpdatePreFired();
+        }
+
+        [HarmonyPatch(typeof(BWA_Auto), nameof(BWA_Auto.OnFireShot))]
+        [HarmonyPatch(typeof(BWA_Burst), nameof(BWA_Burst.OnFireShot))]
+        [HarmonyPatch(typeof(BWA_Semi), nameof(BWA_Semi.OnFireShot))]
+        [HarmonyWrapSafe]
+        [HarmonyPostfix]
+        private static void PostFireCallback(bool __runOriginal, FireStateUpdater __state)
+        {
+            if (__runOriginal)
+                __state.UpdatePostFired();
         }
 
         [HarmonyPatch(typeof(BulletWeaponArchetype), nameof(BulletWeaponArchetype.PostFireCheck))]

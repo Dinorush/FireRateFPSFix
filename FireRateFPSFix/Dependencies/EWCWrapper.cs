@@ -18,7 +18,10 @@ namespace FireRateFPSFix.Dependencies
         {
             hasEWC = IL2CPPChainloader.Instance.Plugins.ContainsKey(PLUGIN_GUID);
             if (hasEWC)
+            {
                 AddFireRateChangeCallback();
+                AddCooldownInterruptCallback();
+            }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -27,6 +30,15 @@ namespace FireRateFPSFix.Dependencies
             FireRateAPI.CooldownSet += (weapon, shotDelay, burstDelay, cooldownDelay) =>
             {
                 FireStateManager.GetUpdater(weapon).EWCOnCooldownSet(shotDelay, burstDelay, cooldownDelay);
+            };
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void AddCooldownInterruptCallback()
+        {
+            FireRateAPI.CooldownInterrupt += (weapon) =>
+            {
+                FireStateManager.GetUpdater(weapon).EWCOnCooldownInterrupt();
             };
         }
 
